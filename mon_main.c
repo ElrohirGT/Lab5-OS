@@ -8,8 +8,8 @@
 #define WARNING "WAR: "
 #define ERROR "ERR: "
 
-const static int THREAD_COUNT = 10;
-const static int THREAD_ITER_COUNT = 5;
+const static int THREAD_COUNT = 20;
+const static int THREAD_ITER_COUNT = 3;
 
 int THREAD_RES_TAKE = 5;
 int RESOURCE_COUNT = 50;
