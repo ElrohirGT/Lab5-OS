@@ -25,3 +25,6 @@ simply redirect the stderr! For example for `sem_exe`:
 # But this should work:
 ./sem_exe.exe > sem_out.txt 2>&1
 ```
+
+`sem_out` and `mon_out` are two files generated this way that showcase an
+example run with this programs!
