@@ -11,7 +11,7 @@
 const static int THREAD_COUNT = 10;
 const static int THREAD_ITER_COUNT = 5;
 
-int RESOURCE_COUNT = 50;
+int RESOURCE_COUNT = 3;
 int THREAD_RES_TAKE = 1;
 
 sem_t sem;
@@ -40,20 +40,34 @@ void *thread_main(void *p) {
     // Take resource...
     fprintf(stderr, LOG "Thread %d: Taking resource! Iteration %d/%d\n", id,
             i + 1, THREAD_ITER_COUNT);
-    if (0 != sem_wait(&sem)) {
-      fprintf(stderr, ERROR "Thread %d: Error waiting for semaphore!\n", id);
-      exit(1);
+
+    int decrease_result = -1;
+    while (0 != decrease_result) {
+      fprintf(stderr, "Thread %d: Attempting to get resource...\n", id);
+
+      if (0 != sem_wait(&sem)) {
+        fprintf(stderr, ERROR "Thread %d: Error waiting for semaphore!\n", id);
+        exit(1);
+      }
+
+      decrease_result = decrease_count(THREAD_RES_TAKE);
+
+      if (0 != sem_post(&sem)) {
+        fprintf(stderr, ERROR "Thread %d: Error releasing for semaphore!\n",
+                id);
+        exit(1);
+      }
+
+      if (0 != decrease_result) {
+        struct timespec time = {.tv_nsec = 0, .tv_sec = 1};
+        fprintf(stderr,
+                WARNING "Thread %d: No resources available, retrying after a "
+                        "quick sleep of %lds!\n",
+                id, time.tv_sec);
+        nanosleep(&time, NULL);
+      }
     }
-    if (0 != decrease_count(THREAD_RES_TAKE)) {
-      fprintf(stderr,
-              WARNING "Thread %d: No resources available, waiting for more!\n",
-              id);
-      continue;
-    }
-    if (0 != sem_post(&sem)) {
-      fprintf(stderr, ERROR "Thread %d: Error releasing for semaphore!\n", id);
-      exit(1);
-    }
+    fprintf(stderr, "Thread %d: Got resource\n", id);
 
     // Do some work...
     struct timespec time = {.tv_nsec = rand_in_range(0, 980),
