@@ -5,13 +5,13 @@
 #include <time.h>
 
 #define LOG "LOG: "
-#define WARNING "WARN: "
-#define ERROR "ERROR: "
+#define WARNING "WAR: "
+#define ERROR "ERR: "
 
 const static int THREAD_COUNT = 10;
 const static int THREAD_ITER_COUNT = 5;
 
-int RESOURCE_COUNT = 3;
+int RESOURCE_COUNT = 4;
 int THREAD_RES_TAKE = 1;
 
 sem_t sem;
@@ -43,7 +43,7 @@ void *thread_main(void *p) {
 
     int decrease_result = -1;
     while (0 != decrease_result) {
-      fprintf(stderr, "Thread %d: Attempting to get resource...\n", id);
+      fprintf(stderr, LOG "Thread %d: Attempting to get resource...\n", id);
 
       if (0 != sem_wait(&sem)) {
         fprintf(stderr, ERROR "Thread %d: Error waiting for semaphore!\n", id);
@@ -67,7 +67,7 @@ void *thread_main(void *p) {
         nanosleep(&time, NULL);
       }
     }
-    fprintf(stderr, "Thread %d: Got resource\n", id);
+    fprintf(stderr, LOG "Thread %d: Got resource\n", id);
 
     // Do some work...
     struct timespec time = {.tv_nsec = rand_in_range(0, 980),
@@ -99,6 +99,12 @@ void *thread_main(void *p) {
 }
 
 int main() {
+  fprintf(
+      stderr,
+      LOG
+      "Starting semaphore run with:\n* THREAD_COUNT: %d\n* THREAD_ITER_COUNT: "
+      "%d\n* RESOURCE_COUNT: %d\n* THREAD_RES_TAKE: %d\n",
+      THREAD_COUNT, THREAD_ITER_COUNT, RESOURCE_COUNT, THREAD_RES_TAKE);
   fprintf(stderr, LOG "Initializing semaphore...\n");
   if (0 != sem_init(&sem, 0, 1)) {
     fprintf(stderr, ERROR "An error ocurred initializing semaphore...\n");
