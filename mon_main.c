@@ -5,8 +5,8 @@
 #include <time.h>
 
 #define LOG "LOG: "
-#define WARNING "WARN: "
-#define ERROR "ERROR: "
+#define WARNING "WAR: "
+#define ERROR "ERR: "
 
 const static int THREAD_COUNT = 10;
 const static int THREAD_ITER_COUNT = 5;
@@ -45,25 +45,25 @@ int monitor_deinit(Monitor *mon) {
 // Tries to take count resources from the RESOURCE_COUNT
 // Returns 0 on success -1 on failure.
 int decrease_count(Monitor *mon, int count) {
-  fprintf(stderr, LOG "MONITOR: Trying to decrease count...");
   int failed = 0;
 
   if (0 != sem_wait(&mon->sem)) {
-    fprintf(stderr, ERROR "MONITOR: Failed to wait on the semaphore!");
+    fprintf(stderr, ERROR "MONITOR: Failed to wait on the semaphore!\n");
     return -1;
   }
 
+  fprintf(stderr, LOG "MONITOR: Trying to decrease count...\n");
   if (mon->resource_count < count) {
-    fprintf(stderr, WARNING "MONITOR: No resources available!");
+    fprintf(stderr, WARNING "MONITOR: No resources available!\n");
     failed = -1;
   } else {
     mon->resource_count -= count;
-    fprintf(stderr, LOG "MONITOR: COUNT DECREASED, %d LEFT...",
+    fprintf(stderr, LOG "MONITOR: COUNT DECREASED, %d LEFT...\n",
             mon->resource_count);
   }
 
   if (0 != sem_post(&mon->sem)) {
-    fprintf(stderr, ERROR "MONITOR: Failed to release on the semaphore!");
+    fprintf(stderr, ERROR "MONITOR: Failed to release on the semaphore!\n");
     failed = -1;
   }
 
@@ -86,14 +86,16 @@ int get_count(Monitor *mon) {
 
 // Return the specified count to the resources
 int increase_count(Monitor *mon, int count) {
-  fprintf(stderr, LOG "Entered monitor increase_count\n");
   int failed = 0;
 
   if (0 != sem_wait(&mon->sem)) {
     return -1;
   }
 
+  fprintf(stderr, LOG "MONITOR: Returning %d to monitor!\n", count);
   mon->resource_count += count;
+  fprintf(stderr, LOG "MONITOR: COUNT INCREASED, %d LEFT...\n",
+          mon->resource_count);
 
   if (0 != sem_post(&mon->sem)) {
     failed = -1;
@@ -108,7 +110,8 @@ void *thread_main(void *p) {
 
   for (int i = 0; i < THREAD_ITER_COUNT; i++) {
     // Take resource...
-    fprintf(stderr, LOG "Thread %d: Taking %d resources! Iteration %d/%d\n", id,
+    fprintf(stderr,
+            LOG "Thread %d: Trying to take %d resources! Iteration %d/%d\n", id,
             THREAD_RES_TAKE, i + 1, THREAD_ITER_COUNT);
     int decrease_result = -1;
     while (0 != decrease_result) {
@@ -122,16 +125,7 @@ void *thread_main(void *p) {
         nanosleep(&time, NULL);
       }
     }
-
-    if (0 != decrease_count(&GLOBAL_MONITOR, THREAD_RES_TAKE)) {
-      fprintf(stderr,
-              WARNING
-              "Thread %d: Failed to take resources from monitor, retrying!\n",
-              id);
-      continue;
-    }
-    fprintf(stderr, LOG "Thread %d: Resources remaining: %d\n", id,
-            get_count(&GLOBAL_MONITOR));
+    fprintf(stderr, LOG "Thread %d: Took %d resources!\n", id, THREAD_RES_TAKE);
 
     // Do some work...
     struct timespec time = {.tv_nsec = rand_in_range(0, 980),
@@ -155,6 +149,13 @@ void *thread_main(void *p) {
 }
 
 int main() {
+  fprintf(
+      stderr,
+      LOG
+      "Starting monitor run with:\n* THREAD_COUNT: %d\n* THREAD_ITER_COUNT: "
+      "%d\n* RESOURCE_COUNT: %d\n* THREAD_RES_TAKE: %d\n",
+      THREAD_COUNT, THREAD_ITER_COUNT, RESOURCE_COUNT, THREAD_RES_TAKE);
+
   fprintf(stderr, LOG "Initializing Monitor...\n");
   if (0 != monitor_init(&GLOBAL_MONITOR)) {
     fprintf(stderr, ERROR "An error ocurred initializing monitor...\n");
