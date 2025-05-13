@@ -38,7 +38,8 @@ void *thread_main(void *p) {
 
   for (int i = 0; i < THREAD_ITER_COUNT; i++) {
     // Take resource...
-    fprintf(stderr, LOG "Thread %d: Taking resource!\n", id);
+    fprintf(stderr, LOG "Thread %d: Taking resource! Iteration %d/%d\n", id,
+            i + 1, THREAD_ITER_COUNT);
     if (0 != sem_wait(&sem)) {
       fprintf(stderr, ERROR "Thread %d: Error waiting for semaphore!\n", id);
       exit(1);
@@ -92,8 +93,10 @@ int main() {
 
   fprintf(stderr, LOG "Creating pthreads...\n");
   pthread_t thread_ids[THREAD_COUNT];
+  int inner_ids[THREAD_COUNT];
   for (int i = 0; i < THREAD_COUNT; i++) {
-    if (pthread_create(thread_ids + i, NULL, thread_main, &i) != 0) {
+    inner_ids[i] = i + 1;
+    if (pthread_create(thread_ids + i, NULL, thread_main, inner_ids + i) != 0) {
       fprintf(stderr, ERROR "An error ocurred creating thread # %d!\n", i);
       return 1;
     }
